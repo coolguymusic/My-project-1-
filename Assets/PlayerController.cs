@@ -23,23 +23,23 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D rb;
     private Animator animator;
-    private TrailRenderer trail; // New: trail renderer reference
+    private TrailRenderer trail;
 
     private int airDashesRemaining;
     private bool isDashing;
     private bool isGrounded;
+    private bool isResting;
 
     private float lastMoveDirection = 1f;
 
     void Awake()
     {
-        // Ensure the player persists across scene changes
         DontDestroyOnLoad(gameObject);
 
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         trail = GetComponent<TrailRenderer>();
-        
+
         if (trail != null)
             trail.enabled = false;
     }
@@ -52,6 +52,20 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         float moveInput = 0f;
+
+        if (isResting)
+        {
+            if (Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame)
+            {
+                isResting = false;
+                animator.SetTrigger("launch");
+
+                float direction = Keyboard.current.rightArrowKey.wasPressedThisFrame ? 1f : -1f;
+                lastMoveDirection = direction;
+                rb.linearVelocity = new Vector2(direction * moveSpeed, jumpForce);
+            }
+            return;
+        }
 
         if (!isDashing)
         {
@@ -104,7 +118,6 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = new Vector2(dashDir * airDashForce, 0f);
         animator.SetTrigger("dash");
 
-        // Enable trail during dash
         if (trail != null)
             trail.enabled = true;
 
@@ -115,7 +128,6 @@ public class PlayerController : MonoBehaviour
 
         yield return new WaitForSeconds(0.2f);
 
-        // Disable trail after dash
         if (trail != null)
             trail.enabled = false;
 
@@ -144,11 +156,26 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
+        else if (collision.collider.CompareTag("RestPlatform"))
+        {
+            ContactPoint2D[] contacts = collision.contacts;
+            foreach (var contact in contacts)
+            {
+                if (contact.normal.y > 0.5f && rb.linearVelocity.y <= 0f)
+                {
+                    rb.linearVelocity = Vector2.zero;
+                    isGrounded = true;
+                    isResting = true;
+                    animator.SetTrigger("rest");
+                    break;
+                }
+            }
+        }
     }
 
     void OnCollisionExit2D(Collision2D collision)
     {
-        if (collision.collider.CompareTag("Platform"))
+        if (collision.collider.CompareTag("Platform") || collision.collider.CompareTag("RestPlatform"))
         {
             isGrounded = false;
         }
