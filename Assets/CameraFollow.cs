@@ -3,29 +3,32 @@ using UnityEngine;
 [System.Serializable]
 public struct CameraZone
 {
-    public float startY;        // The starting Y position for the zone
-    public float endY;          // The ending Y position for the zone
-    public bool isFreezeZone;   // Whether this is a freeze zone
-    public Vector3 freezePosition; // The position to move the camera to when freezing
-    public float freezeSmoothSpeed; // The smooth speed to use when freezing in this zone
+    public float startY;             // Lower bound of the zone
+    public float endY;               // Upper bound of the zone
+    public bool isFreezeZone;        // Whether camera freezes in this zone
+    public Vector3 freezePosition;   // Position to hold camera at
+    public float freezeSmoothSpeed;  // Speed when freezing
 }
 
 public class CameraFollow : MonoBehaviour
 {
     public Transform Player;
-    public float smoothSpeed = 5f; // Default smooth speed when following player
+    public float smoothSpeed = 5f;           // Normal smooth speed for following player
+    public float longFallSmoothSpeed = 10f;  // Smooth speed when falling fast
     public float yOffset = 1f;
-    public float minYPosition = 0f;  // Minimum Y value for camera
+    public float minYPosition = 0f;
+    public float hysteresisBuffer = 2f;      // Prevents camera jitter near zone edges
+    public float longFallThreshold = -15f;   // Speed threshold beyond which freeze zones are ignored
 
     public CameraZone[] cameraZones;
 
     private float targetY;
     private bool shouldFollow = true;
+    private CameraZone? currentZone = null;
 
     void Start()
     {
         DontDestroyOnLoad(gameObject);
-
         if (Player != null)
             targetY = Player.position.y;
     }
@@ -35,38 +38,39 @@ public class CameraFollow : MonoBehaviour
         if (Player == null || cameraZones.Length == 0) return;
 
         float playerY = Player.position.y + yOffset;
+        float verticalSpeed = Player.GetComponent<Rigidbody2D>()?.linearVelocity.y ?? 0f;
+        bool bypassFreeze = verticalSpeed < longFallThreshold;
 
-        // Loop through the zones to check if the camera should stop or resume following
+        // Hysteresis: Only switch zones if outside buffer
         foreach (var zone in cameraZones)
         {
-            // If in a freeze zone, stop the camera from following and smoothly move it to freeze position
-            if (playerY >= zone.startY && playerY <= zone.endY && zone.isFreezeZone)
+            if (playerY > zone.startY - hysteresisBuffer && playerY < zone.endY + hysteresisBuffer)
             {
-                shouldFollow = false;
-                // Smoothly move to the freeze position using zone's specific smooth speed
-                Vector3 targetPosition = zone.freezePosition;
-                transform.position = Vector3.Lerp(transform.position, targetPosition, zone.freezeSmoothSpeed * Time.deltaTime);
-                Debug.Log($"Camera stopped at freeze zone. Player Y: {playerY}, Camera moved to: {targetPosition}");
-                return;  // Exit the loop early since we've already frozen the camera
-            }
-
-            // If in a follow zone, resume following
-            if (playerY >= zone.startY && playerY <= zone.endY && !zone.isFreezeZone)
-            {
-                shouldFollow = true;
-                Debug.Log($"Camera following in follow zone. Player Y: {playerY}");
-                break;  // Exit the loop once we've resumed following
+                // Skip freeze zone if falling fast
+                if (zone.isFreezeZone && !bypassFreeze)
+                {
+                    shouldFollow = false;
+                    Vector3 target = zone.freezePosition;
+                    transform.position = Vector3.Lerp(transform.position, target, zone.freezeSmoothSpeed * Time.deltaTime);
+                    currentZone = zone;
+                    return;
+                }
+                else if (!zone.isFreezeZone)
+                {
+                    shouldFollow = true;
+                    currentZone = zone;
+                    break;
+                }
             }
         }
 
-        // If following, update the target Y position
+        // If the camera should follow, update target position
         if (shouldFollow)
         {
-            targetY = playerY;
-            targetY = Mathf.Max(targetY, minYPosition); // Ensures camera never goes below minYPosition
+            targetY = Mathf.Max(playerY, minYPosition);
+            float currentSmoothSpeed = bypassFreeze ? longFallSmoothSpeed : smoothSpeed; // Use long fall speed if bypassing freeze zones
             Vector3 newPos = new Vector3(0f, targetY, transform.position.z);
-            transform.position = Vector3.Lerp(transform.position, newPos, smoothSpeed * Time.deltaTime);
-            Debug.Log($"Camera following. Target Y: {targetY}, Player Y: {playerY}");
+            transform.position = Vector3.Lerp(transform.position, newPos, currentSmoothSpeed * Time.deltaTime);
         }
     }
 
