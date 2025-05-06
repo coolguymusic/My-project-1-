@@ -1,14 +1,26 @@
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.Audio;
+using System.Collections; // Add this line
 
 public class MusicManager : MonoBehaviour
 {
     public static MusicManager Instance;
 
-    public AudioClip backgroundMusic;
-    [Range(0f, 1f)]
-    public float musicVolume = 0.5f; // You can set this in the Inspector
+    [Header("Music Clips")]
+    public AudioClip[] musicTracks;
 
-    private AudioSource audioSource;
+    [Header("Music Routing")]
+    public AudioMixer audioMixer; // Reference to the Audio Mixer
+    public string musicVolumeParameter = "MusicVolume"; // Must match the parameter name in the mixer
+    public AudioMixerGroup musicMixerGroup; // Audio Mixer Group for music routing
+
+    [Header("Settings")]
+    [Range(0f, 1f)] public float musicVolume = 0.5f;
+    public float crossfadeDuration = 2f;
+
+    private AudioSource sourceA;
+    private AudioSource sourceB;
+    private bool isPlayingA = true;
 
     void Awake()
     {
@@ -21,37 +33,108 @@ public class MusicManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        audioSource = gameObject.AddComponent<AudioSource>();
-        audioSource.clip = backgroundMusic;
-        audioSource.loop = true;
-        audioSource.playOnAwake = false;
-        audioSource.volume = musicVolume; // Use inspector value
-        audioSource.Play();
+        // Setup two AudioSources for crossfading
+        sourceA = gameObject.AddComponent<AudioSource>();
+        sourceB = gameObject.AddComponent<AudioSource>();
+
+        SetupSource(sourceA);
+        SetupSource(sourceB);
+
+        // Start with the first track if available
+        if (musicTracks.Length > 0)
+        {
+            PlayMusic(musicTracks[0]);
+        }
+    }
+
+    void SetupSource(AudioSource source)
+    {
+        source.loop = true;
+        source.playOnAwake = false;
+        source.volume = 0f;
+
+        if (musicMixerGroup != null)
+        {
+            source.outputAudioMixerGroup = musicMixerGroup;
+        }
+        else
+        {
+            Debug.LogWarning("MusicManager: No AudioMixerGroup assigned!");
+        }
     }
 
     void Update()
     {
-        // This keeps the volume in sync with the inspector in real time
-        if (audioSource.volume != musicVolume)
+        // Sync volume for debugging/tuning
+        AudioSource activeSource = isPlayingA ? sourceA : sourceB;
+        if (activeSource.volume != musicVolume)
         {
-            audioSource.volume = musicVolume;
+            activeSource.volume = musicVolume;
         }
+
+        SetMixerVolume(musicVolume); // Keep the mixer volume in sync with the inspector volume
     }
 
     public void SetVolume(float volume)
     {
         musicVolume = volume;
-        audioSource.volume = volume;
+        sourceA.volume = volume;
+        sourceB.volume = volume;
+
+        SetMixerVolume(volume); // Sync with the Audio Mixer
+    }
+
+    public void SetMixerVolume(float volume)
+    {
+        if (audioMixer == null) return;
+
+        // Convert linear to dB
+        float dB = Mathf.Log10(Mathf.Clamp(volume, 0.0001f, 1f)) * 20f;
+        audioMixer.SetFloat(musicVolumeParameter, dB); // Set volume in Audio Mixer
     }
 
     public void StopMusic()
     {
-        audioSource.Stop();
+        sourceA.Stop();
+        sourceB.Stop();
     }
 
-    public void PlayMusic()
+    public void PlayMusic(AudioClip clip)
     {
-        if (!audioSource.isPlaying)
-            audioSource.Play();
+        AudioSource activeSource = isPlayingA ? sourceA : sourceB;
+        activeSource.clip = clip;
+        activeSource.volume = musicVolume;
+        activeSource.Play();
+    }
+
+    public void CrossfadeTo(AudioClip newClip)
+    {
+        StartCoroutine(CrossfadeCoroutine(newClip));
+    }
+
+    private IEnumerator CrossfadeCoroutine(AudioClip newClip)
+    {
+        AudioSource fromSource = isPlayingA ? sourceA : sourceB;
+        AudioSource toSource = isPlayingA ? sourceB : sourceA;
+
+        isPlayingA = !isPlayingA;
+
+        toSource.clip = newClip;
+        toSource.volume = 0f;
+        toSource.Play();
+
+        float time = 0f;
+
+        while (time < crossfadeDuration)
+        {
+            float t = time / crossfadeDuration;
+            fromSource.volume = Mathf.Lerp(musicVolume, 0f, t);
+            toSource.volume = Mathf.Lerp(0f, musicVolume, t);
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        fromSource.Stop();
+        toSource.volume = musicVolume;
     }
 }
