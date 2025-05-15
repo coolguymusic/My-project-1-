@@ -4,10 +4,11 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - '"Platform"'
   - Platform
   - player
   - RestPlatform
+  - WallJumpTrigger
+  - BouncingBall
   layers:
   - Default
   - TransparentFX
