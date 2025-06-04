@@ -248,7 +248,7 @@ MonoBehaviour:
   - {fileID: 1681610261214356781}
   StringsBanks:
   - {fileID: 505702654129679610}
-  cacheTime: 638822298756403464
+  cacheTime: 638828563687814357
   cacheVersion: 131624
 --- !u!114 &505702654129679610
 MonoBehaviour:
@@ -265,7 +265,7 @@ MonoBehaviour:
   Path: ../../StormJump_Fmod/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638822298756403464
+  lastModified: 638828563687371582
   FileSizes:
   - Name: Desktop
     Value: 1334
@@ -312,7 +312,7 @@ MonoBehaviour:
   Path: ../../StormJump_Fmod/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638822298756388011
+  lastModified: 638828563687814357
   FileSizes:
   - Name: Desktop
     Value: 2571904
