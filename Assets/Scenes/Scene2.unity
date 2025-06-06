@@ -3959,6 +3959,10 @@ PrefabInstance:
       value: 0.11
       objectReference: {fileID: 0}
     - target: {fileID: 5258667502411717251, guid: 617d014e21cc348068a917785eabfdf8, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5258667502411717251, guid: 617d014e21cc348068a917785eabfdf8, type: 3}
       propertyPath: xLaunchMultiplier
       value: 0.5
       objectReference: {fileID: 0}

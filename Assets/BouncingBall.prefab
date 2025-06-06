@@ -12,9 +12,10 @@ GameObject:
   - component: {fileID: 4761258067786090186}
   - component: {fileID: 8230334046211460705}
   - component: {fileID: 3378059230678952440}
-  - component: {fileID: 5258667502411717251}
+  - component: {fileID: 861440423830662962}
   - component: {fileID: 9031478506473857378}
   - component: {fileID: 5928076132980959516}
+  - component: {fileID: 8439932349705074895}
   m_Layer: 0
   m_Name: BouncingBall
   m_TagString: BouncingBall
@@ -136,7 +137,7 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.1
---- !u!114 &5258667502411717251
+--- !u!114 &861440423830662962
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -150,6 +151,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bounceForce: 10
   launchForce: 15
+  xLaunchMultiplier: 0.5
+  yLaunchMultiplier: 1
 --- !u!212 &9031478506473857378
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -227,3 +230,23 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &8439932349705074895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7504828039130450389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d633f88e5ae52425f84389def8605aef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bounceSound:
+    Guid:
+      Data1: 1933457158
+      Data2: 1081373224
+      Data3: -727351378
+      Data4: -15705754
+    Path: event:/SFX/BouncingBall
+  maxDistance: 6
